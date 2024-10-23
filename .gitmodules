@@ -1,0 +1,3 @@
+[submodule "modules/arch-install-scripts"]
+	path = modules/arch-install-scripts
+	url = https://gitlab.archlinux.org/archlinux/arch-install-scripts
