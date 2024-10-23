@@ -1,3 +1,6 @@
 [submodule "modules/arch-install-scripts"]
 	path = modules/arch-install-scripts
 	url = https://gitlab.archlinux.org/archlinux/arch-install-scripts
+[submodule "modules/apk-tools"]
+	path = modules/apk-tools
+	url = https://git.alpinelinux.org/apk-tools
