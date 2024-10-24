@@ -4,3 +4,9 @@
 [submodule "modules/apk-tools"]
 	path = modules/apk-tools
 	url = https://git.alpinelinux.org/apk-tools
+[submodule "modules/abuild"]
+	path = modules/abuild
+	url = https://git.alpinelinux.org/abuild
+[submodule "modules/aports"]
+	path = modules/aports
+	url = https://git.alpinelinux.org/aports/
