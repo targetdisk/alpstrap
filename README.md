@@ -8,6 +8,7 @@ These are my scripts for brining up an Alpine system!
 - GNU `install` (from coreutils)
 - M4
 - GNU Autoconf
+- `qemu-user-static` and its `binfmt` rules (for cross-chrooting)
 
 You may need to install some Lua dependencies for building `apk`.  If you feel
 you've already installed them and it's still failing, double-check the Lua
