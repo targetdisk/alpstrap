@@ -10,3 +10,6 @@
 [submodule "modules/aports"]
 	path = modules/aports
 	url = https://git.alpinelinux.org/aports/
+[submodule "modules/bash-util"]
+	path = modules/bash-util
+	url = https://github.com/targetdisk/bash-util
