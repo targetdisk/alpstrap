@@ -1,4 +1,8 @@
 PLATFORM_PHONYS := partition kernel
+PLATFORM_PKGS := linux-lts grub-efi efibootmgr
+
+BOOTFS_PART := 1
+ROOTFS_PART := 2
 
 RUNLEVEL_BOOT ?= hwclock modules bootmisc hostname networking seedrng swap
 RUNLEVEL_DEFAULT ?= acpid crond

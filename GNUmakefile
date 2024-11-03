@@ -21,6 +21,12 @@ else ifeq ($(PLATFORM),uefi)
   include mk/uefi.mk
 endif
 
+ifeq ($(ROOTFS_TYPE),btrfs)
+  include mk/btrfs.mk
+else
+  include mk/simplefs.mk
+endif
+
 RUNLEVEL_BOOT_CMDS := $(foreach SERVICE,$(RUNLEVEL_BOOT),\
 		      rc-update add $(SERVICE) boot &&)
 RUNLEVEL_SYSINIT_CMDS := $(foreach SERVICE,$(RUNLEVEL_SYSINIT),\
@@ -54,7 +60,9 @@ APK_BIN := $(APK_MODULE)/src/apk
 
 ABUILD := $(BUSYBOX) ash $(CURDIR)/$(ABUILD_SCRIPT) -c -P $(CURDIR)/$(REPO) rootbld
 ACHROOT := $(ARCH_MODULE)/arch-chroot
+GENFSTAB := $(ARCH_MODULE)/genfstab
 ACHROOT_CMD := $(DOSU) $(ACHROOT) $(DESTROOT) /bin/sh -c '. /etc/profile'
+ACHROOTI_CMD := $(DOSU) $(ACHROOT) $(MOUNTPOINT) /bin/sh -c '. /etc/profile'
 APK := LD_LIBRARY_PATH=$(APK_MODULE)/src $(APK_BIN)
 BUTIL := . $(BASH_UTIL_MODULE)
 
@@ -69,6 +77,9 @@ $(ARCH_MODULE)/Makefile: .gitmodules
 
 $(ACHROOT): $(ARCH_MODULE)/Makefile
 	$(MAKE) -j -C $(ARCH_MODULE) arch-chroot
+
+$(GENFSTAB): $(ARCH_MODULE)/Makefile
+	$(MAKE) -j -C $(ARCH_MODULE) genfstab
 
 $(APK_MODULE)/Makefile: .gitmodules
 	$(GIMME_MODULE) -- $(APK_MODULE)
@@ -103,9 +114,10 @@ $(DESTROOT):
 
 $(DESTROOT)/.bootstrap-done: $(DESTROOT) $(APK_BIN)
 	$(DOSU) $(APK) --arch $(ARCH) -X $(ALPINE_REPO) --root $(DESTROOT) \
-		-U --allow-untrusted --initdb add alpine-keys $(PKGS) && touch $@
+		-U --allow-untrusted --initdb add alpine-keys && touch $@
 	$(DOSU) $(APK) --arch $(ARCH) -X $(ALPINE_REPO) --root $(DESTROOT) \
-		add alpine-base btrfs-progs e2fsprogs $(PKGS) && touch $@
+		add alpine-base btrfs-progs e2fsprogs $(PLATFORM_PKGS) $(PKGS) \
+		&& touch $@
 
 bootstrap: $(DESTROOT)/.bootstrap-done
 
@@ -118,38 +130,78 @@ blkcheck: $(BASH_UTIL_MODULE)/Makefile
 
 format: partition
 	$(DOSU) mkfs.vfat $(BLKDEV)$(P)1
-	$(DOSU) mkfs.$(ROOTFS_TYPE) $(BLKDEV)$(P)2
+	$(DOSU) mkfs.$(ROOTFS_TYPE) -f $(BLKDEV)$(P)2
 
 $(BLKDEV)$(P)2: partition
 
 ### INSTALLATION ###
 
-services: $(DESTROOT)/.bootstrap-done $(ACHROOT)
+$(DESTROOT)/.services-done: $(DESTROOT)/.bootstrap-done $(ACHROOT)
 	$(ACHROOT_CMD)' && $(RUNLEVEL_CMDS)'
+	$(DOSU) touch $@
 
-fastest-repo: $(DESTROOT)/.bootstrap-done $(ACHROOT)
+services: $(DESTROOT)/.services-done
+
+$(DESTROOT)/.fastrepo-done: $(DESTROOT)/.bootstrap-done $(ACHROOT)
 	$(ACHROOT_CMD)' && setup-apkrepos -f'
+	$(DOSU) touch $@
+
+fastest-repo: $(DESTROOT)/.fastrepo-done
 
 $(MOUNTPOINT):
 	mkdir -p $@ || $(DOSU) mkdir -p $@
 
-mount: $(BLKDEV)$(P)2 $(MOUNTPOINT)
-	$(DOSU) mount $(BLKDEV)$(P)2 $(MOUNTPOINT)
-	$(DOSU) mkdir -p $(MOUNTPOINT)/boot
-	$(DOSU) mount $(BLKDEV)$(P)1 $(MOUNTPOINT)/boot
+$(MOUNTPOINT)/etc/fstab: $(GENFSTAB) mount
+	$(GENFSTAB) -U $(MOUNTPOINT) | $(DOSU) tee $@
 
-install: services fastest-repo
+fstab: $(MOUNTPOINT)/etc/fstab
+
+mount: $(MOUNTPOINT)/.mount-done
+
+$(MOUNTPOINT)/.install-done: fstab services fastest-repo
+	@[ -z "$(MOUNTPOINT)" ] && $(BUTIL)/logging.bash \
+		&& die 'ERROR: Must define MOUNTPOINT env variable!' \
+		|| :
+	$(DOSU) rsync -aAXHv \
+		--exclude=$(DESTROOT)'/dev/*' \
+		--exclude=$(DESTROOT)'/proc/*' \
+		--exclude=$(DESTROOT)'/sys/*' \
+		--exclude=$(DESTROOT)'/tmp/*' \
+		--exclude=$(DESTROOT)'/run/*' \
+		--exclude=$(DESTROOT)'/mnt/*' \
+		--exclude=$(DESTROOT)'/media/*' \
+		--exclude=$(DESTROOT)'/lost+found/' \
+		$(DESTROOT)/ $(MOUNTPOINT)
+	$(DOSU) touch $@
+
+install: $(MOUNTPOINT)/.install-done
+
+install-chroot: $(MOUNTPOINT)/.install-done $(ACHROOT)
+	$(ACHROOTI_CMD)' && sh'
+
+chroot: $(DESTROOT)/.bootstrap-done $(ACHROOT)
+	$(ACHROOT_CMD)' && sh'
 
 ### CLEANLINESS ###
-clean:
+clean: umount
 	git submodule deinit -f -- \
 		$(APK_MODULE) $(ABUILD_MODULE) $(APORTS_MODULE) $(ARCH_MODULE) \
 		$(BASH_UTIL_MODULE)
-	$(DOSU) umount mnt/boot || :
-	$(DOSU) umount mnt || :
 	$(DOSU) rm -rf destroot/* repo/*
 
 ### MAKEY-MAKEY ###
 
 .PHONY: default-target tools bootstrap aports blkcheck format install \
-	$(PLATFORM_PHONYS)
+	$(PLATFORM_PHONYS) mount fstab chroot
+
+### DOCS ################ Require Pandoc to be installed ############## DOCS ###
+
+pandoc.css:
+	wget https://sqt.wtf/~targetdisk/pandoc.css
+
+# Requires Pandoc to be installed
+README.html: README.md pandoc.css
+	pandoc $< -s -c pandoc.css -o $@
+
+README: README.html
+	xdg-open $<

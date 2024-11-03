@@ -6,6 +6,10 @@ else
 endif
 
 PLATFORM_PHONYS := partition kernel
+PLATFORM_PKGS := linux-rpi
+
+BOOTFS_PART := 1
+ROOTFS_PART := 2
 
 RUNLEVEL_BOOT ?= modules bootmisc hostname networking seedrng swap
 RUNLEVEL_DEFAULT ?= crond
