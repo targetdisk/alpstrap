@@ -60,7 +60,7 @@ make bootstrap
 ```
 
 ## TODO
-- [ ] Add bootloader installation on UEFI (starting with GRUB)
+- [ ] Add bootloader/stub installation on UEFI
 - [ ] Automate cross-compiling ports tree on non-Alpine hosts with only Git
       submodules.
 - [ ] Add Bcachefs support
