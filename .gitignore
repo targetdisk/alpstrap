@@ -1,2 +1,5 @@
 destroot
 repo
+mnt
+README.html
+pandoc.css
