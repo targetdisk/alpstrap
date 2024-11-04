@@ -60,14 +60,14 @@ make bootstrap
 ```
 
 ## TODO
--[ ] Add bootloader installation on UEFI (starting with GRUB)
--[ ] Automate cross-compiling ports tree on non-Alpine hosts with only Git
-     submodules.
--[ ] Add Bcachefs support
--[ ] Make self-hosted installer
--[ ] Add PXE-netbooted installer and ad-hoc TFTP server
--[ ] Finish raspi `/boot` partition.
--[ ] Share helper scripts with upstream Alpine??
+- [ ] Add bootloader installation on UEFI (starting with GRUB)
+- [ ] Automate cross-compiling ports tree on non-Alpine hosts with only Git
+      submodules.
+- [ ] Add Bcachefs support
+- [ ] Make self-hosted installer
+- [ ] Add PXE-netbooted installer and ad-hoc TFTP server
+- [ ] Finish raspi `/boot` partition.
+- [ ] Share helper scripts with upstream Alpine??
 
 ## SEE ALSO
 * Alpine's [wiki page on bootstrapping](https://wiki.alpinelinux.org/wiki/Bootstrapping_Alpine_Linux)
