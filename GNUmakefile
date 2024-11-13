@@ -27,6 +27,14 @@ else
   include mk/simplefs.mk
 endif
 
+ifneq (,$(WAYLAND_DISPLAY))
+  XDG_BASEDIR := $(shell dirname $(XDG_RUNTIME_DIR))
+  WAYLAND_ASSIST := env WAYLAND_DISPLAY="$(XDG_RUNTIME_DIR)/$(WAYLAND_DISPLAY)" \
+		    XDG_BASEDIR="$(XDG_BASEDIR)/0"
+else
+  WAYLAND_ASSIST :=
+endif
+
 RUNLEVEL_BOOT_CMDS := $(foreach SERVICE,$(RUNLEVEL_BOOT),\
 		      rc-update add $(SERVICE) boot &&)
 RUNLEVEL_SYSINIT_CMDS := $(foreach SERVICE,$(RUNLEVEL_SYSINIT),\
@@ -176,9 +184,15 @@ $(MOUNTPOINT)/.install-done: fstab services fastest-repo
 
 install: $(MOUNTPOINT)/.install-done
 
+bootloader: $(MOUNTPOINT)/.bootloader-done
+
+### POST-INSTALL TOOLS ###
+
+# Launch a shell into the installed volume
 install-chroot: $(MOUNTPOINT)/.install-done $(ACHROOT)
 	$(ACHROOTI_CMD)' && sh'
 
+# Launch a shell into the local bootstrapped root
 chroot: $(DESTROOT)/.bootstrap-done $(ACHROOT)
 	$(ACHROOT_CMD)' && sh'
 

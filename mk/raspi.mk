@@ -6,7 +6,9 @@ else
 endif
 
 PLATFORM_PHONYS := partition kernel
-PLATFORM_PKGS := linux-rpi
+KERNEL_FLAVOR := rpi
+KERNEL_PKG := linux-$(KERNEL_FLAVOR)
+PLATFORM_PKGS := $(KERNEL_PKG)
 
 BOOTFS_PART := 1
 ROOTFS_PART := 2
